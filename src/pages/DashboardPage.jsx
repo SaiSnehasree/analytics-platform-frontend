@@ -54,15 +54,15 @@ export default function DashboardPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
+        <div className="bg-slate-950 text-white min-h-screen">
+
+            <div className="flex-1">
 
             {/* Navbar */}
             <div className="border-b border-slate-800 bg-slate-900">
                 <div className="max-w-7xl mx-auto px-8 py-4 flex justify-between items-center">
 
-                    <h1 className="text-2xl font-bold">
-                        Analytics Platform
-                    </h1>
+                    <h1 className="text-2xl font-bold"></h1>
 
                     <button
                         onClick={() => {
@@ -83,7 +83,7 @@ export default function DashboardPage() {
                 <div className="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-700 rounded-3xl p-10 mb-8 shadow-2xl">
 
                     <h1 className="text-5xl font-bold mb-3">
-                        Welcome Back, Sneha 👋
+                        Welcome Back
                     </h1>
 
                     <p className="text-lg text-slate-100">
@@ -265,6 +265,7 @@ export default function DashboardPage() {
                 </div>
 
             </div>
+        </div>
         </div>
     );
 }
