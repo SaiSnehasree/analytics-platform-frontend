@@ -1,166 +1,105 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
+
 export default function LoginPage() {
-
-    const navigate = useNavigate();
-
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-    const handleLogin = async () => {
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
 
         try {
+            const res = await api.post("/auth/login", { email, password });
+            const { token, tenantId, email: userEmail, workspaceName, ownerName } = res.data;
 
-            const response = await api.post("/auth/login", {
-                email,
-                password
-            });
+            // Store all auth data in localStorage
+            localStorage.setItem("token", token);
+            localStorage.setItem("tenantId", tenantId);
+            localStorage.setItem("email", userEmail);
+            localStorage.setItem("workspaceName", workspaceName);
+            localStorage.setItem("ownerName", ownerName);
 
-            alert(response.data);
-
-            if (response.data === "Login Successful") {
-                navigate("/dashboard");
-            }
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert("Login Failed");
+            // Show onboarding on first login
+            const onboarded = localStorage.getItem("onboarding_complete");
+            navigate(onboarded ? "/dashboard" : "/onboarding");
+        } catch (err) {
+            setError(err.response?.data?.error || "Login failed. Please try again.");
+        } finally {
+            setLoading(false);
         }
     };
+
     return (
-        <div className="min-h-screen bg-slate-950 p-6 lg:p-10 text-white">
-
-            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-5 min-h-[90vh]">
-
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 hover:border-cyan-500 transition">
-                    <p className="text-slate-400 text-sm">Revenue</p>
-                    <h1 className="text-5xl font-bold mt-4">$128K</h1>
-                    <p className="text-emerald-400 mt-3">+24% this month</p>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 hover:border-cyan-500 transition">
-                    <p className="text-slate-400 text-sm">Active Users</p>
-                    <h1 className="text-5xl font-bold mt-4">15.4K</h1>
-                    <p className="text-cyan-400 mt-3">Live monitoring</p>
-                </div>
-
-                <div className="lg:col-span-2 lg:row-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-5 flex flex-col justify-center">
-
-                    <div className="mb-8">
-                        <h1 className="text-4xl font-bold">
-                            Analytics
-                            <span className="text-cyan-400"> Platform</span>
-                        </h1>
-
-                        <p className="text-slate-400 mt-4 text-lg">
-                            Monitor. Analyze. Scale.
-                        </p>
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+            <div className="w-full max-w-md">
+                {/* Logo */}
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl mb-4">
+                        <span className="text-3xl">📊</span>
                     </div>
+                    <h1 className="text-3xl font-bold text-white">Analytics Platform</h1>
+                    <p className="text-slate-400 mt-2">Multi-Tenant SaaS Dashboard</p>
+                </div>
 
-                    <input
-                        type="email"
-                        placeholder="Email Address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-2xl p-4 mb-4 outline-none focus:border-cyan-500"
-                    />
+                {/* Card */}
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+                    <h2 className="text-xl font-semibold text-white mb-6">Sign in to your workspace</h2>
 
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-2xl p-4 mb-6 outline-none focus:border-cyan-500"
-                    />
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-5 text-sm">
+                            {error}
+                        </div>
+                    )}
 
-                    <button
-                        onClick={handleLogin}
-                        className="w-full bg-cyan-500 hover:bg-cyan-600 rounded-2xl py-4 font-semibold transition"
-                    >
-                        Access Workspace
-                    </button>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <div>
+                            <label className="block text-slate-400 text-sm mb-1.5">Email</label>
+                            <input
+                                type="email"
+                                id="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                placeholder="you@example.com"
+                                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-slate-400 text-sm mb-1.5">Password</label>
+                            <input
+                                type="password"
+                                id="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                placeholder="••••••••"
+                                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition"
+                            />
+                        </div>
 
-                    <p className="text-slate-400 mt-6 text-center">
-                        New here?
-                        <Link
-                            to="/signup"
-                            className="ml-2 text-cyan-400 font-medium"
+                        <button
+                            type="submit"
+                            id="login-btn"
+                            disabled={loading}
+                            className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                         >
-                            Create Workspace
+                            {loading ? "Signing in..." : "Sign In"}
+                        </button>
+                    </form>
+
+                    <p className="text-center text-slate-500 text-sm mt-6">
+                        Don't have a workspace?{" "}
+                        <Link to="/signup" className="text-cyan-400 hover:text-cyan-300 font-medium">
+                            Create one
                         </Link>
                     </p>
-
                 </div>
-
-                <div className="lg:row-span-2 bg-slate-900 border border-slate-500 rounded-3xl p-6">
-                    <h2 className="text-xl font-semibold mb-6">
-                        Live Activity
-                    </h2>
-
-                    <div className="space-y-5">
-
-                        <div className="border-l-2 border-cyan-500 pl-4">
-                            <p className="font-medium">
-                                New Tenant Registered
-                            </p>
-                            <p className="text-slate-400 text-sm">
-                                2 minutes ago
-                            </p>
-                        </div>
-
-                        <div className="border-l-2 border-purple-500 pl-4">
-                            <p className="font-medium">
-                                Revenue Report Generated
-                            </p>
-                            <p className="text-slate-400 text-sm">
-                                12 minutes ago
-                            </p>
-                        </div>
-
-                        <div className="border-l-2 border-green-500 pl-4">
-                            <p className="font-medium">
-                                Dashboard Accessed
-                            </p>
-                            <p className="text-slate-400 text-sm">
-                                24 minutes ago
-                            </p>
-                        </div>
-
-                        <div className="border-l-2 border-orange-500 pl-4">
-                            <p className="font-medium">
-                                Alert Triggered
-                            </p>
-                            <p className="text-slate-400 text-sm">
-                                41 minutes ago
-                            </p>
-                        </div>
-
-                    </div>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 hover:border-cyan-500 transition">
-                    <p className="text-slate-400 text-sm">
-                        Growth Rate
-                    </p>
-                    <h1 className="text-5xl font-bold mt-4">24%</h1>
-                    <p className="text-emerald-400 mt-3">
-                        Positive trend
-                    </p>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 hover:border-cyan-500 transition">
-                    <p className="text-slate-400 text-sm">
-                        Events Processed
-                    </p>
-                    <h1 className="text-5xl font-bold mt-4">2.1M</h1>
-                    <p className="text-cyan-400 mt-3">
-                        Real-time updates
-                    </p>
-                </div>
-
             </div>
         </div>
     );

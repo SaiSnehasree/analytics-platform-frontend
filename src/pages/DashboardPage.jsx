@@ -1,271 +1,172 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import { useWebSocket } from "../hooks/useWebSocket";
 import {
-    ResponsiveContainer,
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    Tooltip,
+    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
+    LineChart, Line, CartesianGrid,
 } from "recharts";
 
 export default function DashboardPage() {
     const [stats, setStats] = useState({
-        totalTenants: 0,
-        activeUsers: 0,
         reportsGenerated: 0,
-        apiRequests: 0,
+        activeDataSources: 0,
+        totalMetrics: 0,
+        anomaliesLast24h: 0,
     });
+    const [realtimeData, setRealtimeData] = useState([]);
+    const { latestMetric, latestAnomaly, isConnected } = useWebSocket();
 
     useEffect(() => {
-        fetchStats();
+        api.get("/dashboard/stats")
+            .then(res => setStats(res.data))
+            .catch(console.error);
     }, []);
 
-    const fetchStats = async () => {
-        try {
-            const response = await api.get("/dashboard/stats");
-
-            setStats({
-                totalTenants: response.data.totalTenants || 0,
-                activeUsers: response.data.activeUsers || 0,
-                reportsGenerated: response.data.reportsGenerated || 0,
-                apiRequests: response.data.apiRequests || 0,
-            });
-        } catch (error) {
-            console.error(error);
-
-            setStats({
-                totalTenants: 3,
-                activeUsers: 3,
-                reportsGenerated: 120,
-                apiRequests: 4500,
-            });
+    // Append incoming real-time metric to chart (keep last 30 points)
+    useEffect(() => {
+        if (latestMetric) {
+            setRealtimeData(prev => [
+                ...prev.slice(-29),
+                {
+                    name: latestMetric.metricName,
+                    value: latestMetric.metricValue,
+                    time: new Date(latestMetric.recordedAt).toLocaleTimeString(),
+                },
+            ]);
         }
-    };
+    }, [latestMetric]);
 
-    const analyticsData = [
-        { day: "Mon", requests: 1200 },
-        { day: "Tue", requests: 2100 },
-        { day: "Wed", requests: 1800 },
-        { day: "Thu", requests: 2600 },
-        { day: "Fri", requests: 3200 },
-        { day: "Sat", requests: 2400 },
-        { day: "Sun", requests: 3900 },
+    const workspaceName = localStorage.getItem("workspaceName") || "Your Workspace";
+
+    const kpiCards = [
+        { label: "Reports",       value: stats.reportsGenerated,  color: "cyan",   icon: "📄" },
+        { label: "Data Sources",  value: stats.activeDataSources, color: "green",  icon: "📡" },
+        { label: "Total Metrics", value: stats.totalMetrics,      color: "purple", icon: "📈" },
+        { label: "Anomalies 24h", value: stats.anomaliesLast24h,  color: "red",    icon: "🔴" },
     ];
+
+    const colorMap = {
+        cyan:   { text: "text-cyan-400",   border: "border-cyan-500/20" },
+        green:  { text: "text-green-400",  border: "border-green-500/20" },
+        purple: { text: "text-purple-400", border: "border-purple-500/20" },
+        red:    { text: "text-red-400",    border: "border-red-500/20" },
+    };
 
     return (
         <div className="bg-slate-950 text-white min-h-screen">
-
-            <div className="flex-1">
-
-            {/* Navbar */}
-            <div className="border-b border-slate-800 bg-slate-900">
-                <div className="max-w-7xl mx-auto px-8 py-4 flex justify-between items-center">
-
-                    <h1 className="text-2xl font-bold"></h1>
-
-                    <button
-                        onClick={() => {
-                            localStorage.clear();
-                            window.location.href = "/";
-                        }}
-                        className="bg-red-500 hover:bg-red-600 px-5 py-2 rounded-xl transition"
-                    >
-                        Logout
-                    </button>
-
+            {/* Top bar */}
+            <div className="border-b border-slate-800 bg-slate-900 px-8 py-4 flex justify-between items-center">
+                <div>
+                    <h2 className="text-lg font-bold text-white">{workspaceName}</h2>
+                    <p className="text-xs text-slate-500">Real-time Analytics Dashboard</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <span className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border ${
+                        isConnected
+                            ? "text-green-400 border-green-500/30 bg-green-500/10"
+                            : "text-slate-500 border-slate-700 bg-slate-800"
+                    }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-green-400 animate-pulse" : "bg-slate-600"}`}/>
+                        {isConnected ? "Live" : "Offline"}
+                    </span>
                 </div>
             </div>
 
             <div className="max-w-7xl mx-auto p-8">
-
-                {/* Hero */}
-                <div className="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-700 rounded-3xl p-10 mb-8 shadow-2xl">
-
-                    <h1 className="text-5xl font-bold mb-3">
-                        Welcome Back
-                    </h1>
-
-                    <p className="text-lg text-slate-100">
-                        Monitor platform performance, analytics reports,
-                        API traffic and workspace growth in real time.
+                {/* Hero banner */}
+                <div className="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-700 rounded-3xl p-8 mb-8 shadow-2xl">
+                    <h1 className="text-4xl font-bold mb-2">Welcome Back 👋</h1>
+                    <p className="text-slate-100">
+                        Monitor your analytics, track anomalies, and visualize metrics in real time.
                     </p>
-
                 </div>
 
-                {/* Stats */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-
-                    <div className="bg-slate-900 rounded-3xl p-6 border border-cyan-500/20 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
-                        <p className="text-slate-400">Total Tenants</p>
-                        <h2 className="text-5xl font-bold text-cyan-400 mt-4">
-                            {stats.totalTenants}
-                        </h2>
-                    </div>
-
-                    <div className="bg-slate-900 rounded-3xl p-6 border border-green-500/20">
-                        <p className="text-slate-400">Active Users</p>
-                        <h2 className="text-5xl font-bold text-green-400 mt-4">
-                            {stats.activeUsers}
-                        </h2>
-                    </div>
-
-                    <div className="bg-slate-900 rounded-3xl p-6 border border-purple-500/20">
-                        <p className="text-slate-400">Reports Generated</p>
-                        <h2 className="text-5xl font-bold text-purple-400 mt-4">
-                            {stats.reportsGenerated}
-                        </h2>
-                    </div>
-
-                    <div className="bg-slate-900 rounded-3xl p-6 border border-yellow-500/20">
-                        <p className="text-slate-400">API Requests</p>
-                        <h2 className="text-5xl font-bold text-yellow-400 mt-4">
-                            {stats.apiRequests}
-                        </h2>
-                    </div>
-
-                </div>
-
-                {/* Chart + Health */}
-                <div className="grid lg:grid-cols-3 gap-6 mb-8">
-
-                    <div className="lg:col-span-2 bg-slate-900 rounded-3xl border border-slate-800 p-6">
-
-                        <h2 className="text-2xl font-semibold mb-6">
-                            Weekly API Usage
-                        </h2>
-
-                        <div className="h-80">
-
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={analyticsData}>
-                                    <XAxis dataKey="day" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Bar
-                                        dataKey="requests"
-                                        fill="#06B6D4"
-                                        radius={[10, 10, 0, 0]}
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
-
+                {/* KPI Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+                    {kpiCards.map((card) => (
+                        <div
+                            key={card.label}
+                            className={`bg-slate-900 rounded-3xl p-6 border ${colorMap[card.color].border} hover:-translate-y-1 hover:shadow-2xl transition-all duration-300`}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <p className="text-slate-400 text-sm">{card.label}</p>
+                                <span className="text-xl">{card.icon}</span>
+                            </div>
+                            <h2 className={`text-5xl font-bold ${colorMap[card.color].text}`}>
+                                {card.value}
+                            </h2>
                         </div>
+                    ))}
+                </div>
 
-                    </div>
-
+                {/* Charts row */}
+                <div className="grid lg:grid-cols-2 gap-6 mb-8">
+                    {/* Real-time line chart */}
                     <div className="bg-slate-900 rounded-3xl border border-slate-800 p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-lg font-semibold">Live Metric Stream</h2>
+                            {latestMetric && (
+                                <span className="text-xs text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 rounded-full">
+                                    {latestMetric.metricName}: {latestMetric.metricValue?.toFixed(2)}
+                                </span>
+                            )}
+                        </div>
+                        <div className="h-64">
+                            {realtimeData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={realtimeData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                                        <XAxis dataKey="time" tick={{ fontSize: 10, fill: "#64748b" }} />
+                                        <YAxis tick={{ fontSize: 10, fill: "#64748b" }} />
+                                        <Tooltip
+                                            contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 8 }}
+                                            labelStyle={{ color: "#94a3b8" }}
+                                        />
+                                        <Line type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={2} dot={false} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-slate-600 text-sm">
+                                    Waiting for real-time data...
+                                    <br/>
+                                    <span className="text-xs mt-1">Connect a data source or send a webhook</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
-                        <h2 className="text-2xl font-semibold mb-6">
-                            System Health
-                        </h2>
-
-                        <div className="space-y-5">
-
-                            <div className="flex justify-between">
-                                <span>Database</span>
-                                <span className="text-green-400 font-bold">Online</span>
-                            </div>
-
-                            <div className="flex justify-between">
-                                <span>Backend API</span>
-                                <span className="text-green-400 font-bold">Running</span>
-                            </div>
-
-                            <div className="flex justify-between">
-                                <span>Storage</span>
-                                <span className="text-green-400 font-bold">Healthy</span>
-                            </div>
-
-                            <div className="flex justify-between">
-                                <span>CPU Usage</span>
-                                <span className="text-yellow-400 font-bold">42%</span>
-                            </div>
-
-                            <div className="flex justify-between">
-                                <span>Memory Usage</span>
-                                <span className="text-cyan-400 font-bold">68%</span>
-                            </div>
-
+                    {/* System health panel */}
+                    <div className="bg-slate-900 rounded-3xl border border-slate-800 p-6">
+                        <h2 className="text-lg font-semibold mb-6">System Health</h2>
+                        <div className="space-y-4">
+                            {[
+                                { label: "Database", value: "Online", color: "text-green-400" },
+                                { label: "Backend API", value: "Running", color: "text-green-400" },
+                                { label: "WebSocket", value: isConnected ? "Connected" : "Disconnected",
+                                  color: isConnected ? "text-green-400" : "text-red-400" },
+                                { label: "Anomaly Detector", value: "Active", color: "text-cyan-400" },
+                                { label: "Mail Service", value: "Configured", color: "text-yellow-400" },
+                            ].map(item => (
+                                <div key={item.label} className="flex justify-between items-center py-2 border-b border-slate-800 last:border-0">
+                                    <span className="text-slate-400 text-sm">{item.label}</span>
+                                    <span className={`font-semibold text-sm ${item.color}`}>{item.value}</span>
+                                </div>
+                            ))}
                         </div>
 
+                        {/* Anomaly alert */}
+                        {latestAnomaly && (
+                            <div className="mt-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+                                <p className="text-red-400 text-xs font-semibold">⚠ Anomaly Detected</p>
+                                <p className="text-red-300 text-xs mt-1">
+                                    {latestAnomaly.metricName}: {latestAnomaly.metricValue?.toFixed(2)}
+                                    {" "}({latestAnomaly.severity})
+                                </p>
+                            </div>
+                        )}
                     </div>
-
                 </div>
-
-                {/* Quick Overview */}
-                <div className="grid md:grid-cols-3 gap-6 mb-8">
-
-                    <div className="bg-slate-900 rounded-3xl p-6">
-                        <p className="text-slate-400">Today's Requests</p>
-                        <h2 className="text-4xl font-bold mt-3">1,294</h2>
-                    </div>
-
-                    <div className="bg-slate-900 rounded-3xl p-6">
-                        <p className="text-slate-400">New Workspaces</p>
-                        <h2 className="text-4xl font-bold mt-3">14</h2>
-                    </div>
-
-                    <div className="bg-slate-900 rounded-3xl p-6">
-                        <p className="text-slate-400">Active Sessions</p>
-                        <h2 className="text-4xl font-bold mt-3">86</h2>
-                    </div>
-
-                </div>
-
-                {/* Recent Activity */}
-                <div className="bg-slate-900 rounded-3xl border border-slate-800 p-6">
-
-                    <h2 className="text-2xl font-semibold mb-6">
-                        Recent Workspace Activity
-                    </h2>
-
-                    <div className="overflow-x-auto">
-
-                        <table className="w-full">
-
-                            <thead>
-                            <tr className="border-b border-slate-700 text-slate-400">
-                                <th className="text-left py-4">Workspace</th>
-                                <th className="text-left py-4">Owner</th>
-                                <th className="text-left py-4">Reports</th>
-                                <th className="text-left py-4">Status</th>
-                            </tr>
-                            </thead>
-
-                            <tbody>
-
-                            <tr className="border-b border-slate-800">
-                                <td className="py-4">Marketing Analytics</td>
-                                <td>Sneha</td>
-                                <td>54</td>
-                                <td className="text-green-400">Active</td>
-                            </tr>
-
-                            <tr className="border-b border-slate-800">
-                                <td className="py-4">Sales Dashboard</td>
-                                <td>Admin</td>
-                                <td>33</td>
-                                <td className="text-green-400">Active</td>
-                            </tr>
-
-                            <tr>
-                                <td className="py-4">Finance Reports</td>
-                                <td>Manager</td>
-                                <td>12</td>
-                                <td className="text-yellow-400">Pending</td>
-                            </tr>
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
             </div>
-        </div>
         </div>
     );
 }
