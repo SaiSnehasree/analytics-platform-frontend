@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link , useNavigate } from "react-router-dom";
 import api from "../services/api";
-
+import { Eye, EyeOff } from "lucide-react";
 export default function SignupPage() {
 
     const [workspaceName, setWorkspaceName] = useState("");
     const [ownerName, setOwnerName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-
+    const [showPassword, setShowPassword] = useState(false);
+    const navigate = useNavigate();
     const handleSignup = async () => {
 
         try {
@@ -21,6 +22,7 @@ export default function SignupPage() {
             });
 
             alert(response.data.message || "Signup successful!");
+            navigate("/");
         } catch (error) {
 
             console.error(error);
@@ -62,13 +64,31 @@ export default function SignupPage() {
                     onChange={(e) => setEmail(e.target.value)}
                 />
 
-                <input
-                    placeholder="Password"
-                    type="password"
-                    style={styles.input}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
+                <div style={{ position: "relative", marginBottom: "15px" }}>
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        style={styles.input}
+                    />
+
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{
+                            position: "absolute",
+                            right: "12px",
+                            top: "14px",
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "#94a3b8"
+                        }}
+                    >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                </div>
 
                 <button
                     style={styles.button}
@@ -108,7 +128,8 @@ const styles = {
 
     title:{
         textAlign:"center",
-        marginBottom:"10px"
+        marginBottom:"10px",
+        color : "#ffffff"
     },
 
     subtitle:{
