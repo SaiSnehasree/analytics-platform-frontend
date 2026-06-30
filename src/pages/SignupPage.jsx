@@ -20,8 +20,7 @@ export default function SignupPage() {
                 password
             });
 
-            alert(response.data);
-
+            alert(response.data.message || "Signup successful!");
         } catch (error) {
 
             console.error(error);
