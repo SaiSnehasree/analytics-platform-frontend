@@ -3,7 +3,17 @@ import GridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import api from "../services/api";
-
+import {
+    ResponsiveContainer,
+    LineChart,
+    Line,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
+    CartesianGrid
+} from "recharts";
 const WIDGET_TYPES = [
     { type: "KPI_CARD",   label: "KPI Card",    icon: "🔢" },
     { type: "LINE_CHART", label: "Line Chart",  icon: "📈" },
@@ -18,9 +28,20 @@ export default function DashboardBuilderPage() {
     const [layout, setLayout] = useState([]);
     const [saved, setSaved] = useState(false);
     const [locked, setLocked] = useState(false);
+    const [stats, setStats] = useState({
+        reportsGenerated: 0,
+        activeDataSources: 0,
+        totalMetrics: 0,
+        anomaliesLast24h: 0,
+    });
+    useEffect(() => {
+        loadLayout();
 
-    useEffect(() => { loadLayout(); }, []);
+        api.get("/dashboard/stats")
+            .then((res) => setStats(res.data))
+            .catch(console.error);
 
+    }, []);
     const loadLayout = async () => {
         try {
             const res = await api.get("/dashboard/layout");
@@ -72,28 +93,110 @@ export default function DashboardBuilderPage() {
 
     const renderWidgetContent = (widget) => {
         const style = { color: widget.color };
+
+        const lineData = [
+            { month: "Jan", value: 1200 },
+            { month: "Feb", value: 1800 },
+            { month: "Mar", value: 2400 },
+            { month: "Apr", value: 3000 },
+            { month: "May", value: 3800 },
+            { month: "Jun", value: 4500 },
+        ];
+
+        const barData = [
+            { region: "North", sales: 5200 },
+            { region: "South", sales: 7400 },
+            { region: "East", sales: 4300 },
+            { region: "West", sales: 6100 },
+        ];
+
         switch (widget.type) {
+
             case "KPI_CARD":
-                return <div className="flex flex-col items-center justify-center h-full">
-                    <p className="text-slate-400 text-xs">{widget.title}</p>
-                    <p className="text-4xl font-bold mt-2" style={style}>—</p>
-                </div>;
+                return (
+                    <div className="flex flex-col items-center justify-center h-full">
+                        <p className="text-slate-400 text-xs">{widget.title}</p>
+
+                        <p
+                            className="text-4xl font-bold mt-2"
+                            style={style}
+                        >
+                            {stats.reportsGenerated}
+                        </p>
+
+                        <p className="text-green-400 text-xs mt-2">
+                            Live Backend Data
+                        </p>
+                    </div>
+                );
+
             case "LINE_CHART":
-                return <div className="flex flex-col items-center justify-center h-full text-slate-600">
-                    <span className="text-3xl">📈</span>
-                    <p className="text-xs mt-1">{widget.title}</p>
-                </div>;
+                return (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={lineData}>
+                            <CartesianGrid stroke="#334155" />
+                            <XAxis dataKey="month" />
+                            <YAxis />
+                            <Tooltip />
+                            <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke="#06b6d4"
+                                strokeWidth={3}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                );
+
             case "BAR_CHART":
-                return <div className="flex flex-col items-center justify-center h-full text-slate-600">
-                    <span className="text-3xl">📊</span>
-                    <p className="text-xs mt-1">{widget.title}</p>
-                </div>;
+                return (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={barData}>
+                            <CartesianGrid stroke="#334155" />
+                            <XAxis dataKey="region" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar
+                                dataKey="sales"
+                                fill="#8b5cf6"
+                            />
+                        </BarChart>
+                    </ResponsiveContainer>
+                );
+
             case "DATA_TABLE":
-                return <div className="flex flex-col items-center justify-center h-full text-slate-600">
-                    <span className="text-3xl">📋</span>
-                    <p className="text-xs mt-1">{widget.title}</p>
-                </div>;
-            default: return null;
+                return (
+                    <div className="overflow-auto">
+                        <table className="w-full text-xs text-slate-300">
+                            <thead>
+                            <tr className="border-b border-slate-700">
+                                <th className="text-left py-2">Product</th>
+                                <th className="text-right py-2">Sales</th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                            <tr>
+                                <td className="py-2">Laptop</td>
+                                <td className="text-right">520</td>
+                            </tr>
+
+                            <tr>
+                                <td className="py-2">Mobile</td>
+                                <td className="text-right">780</td>
+                            </tr>
+
+                            <tr>
+                                <td className="py-2">Tablet</td>
+                                <td className="text-right">340</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                );
+
+            default:
+                return null;
         }
     };
 
