@@ -67,7 +67,7 @@ export default function DashboardPage() {
                             : "text-slate-500 border-slate-700 bg-slate-800"
                     }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-green-400 animate-pulse" : "bg-slate-600"}`}/>
-                        {isConnected ? "Live" : "Offline"}
+                        {isConnected ? "Live" : "Online"}
                     </span>
                 </div>
             </div>
