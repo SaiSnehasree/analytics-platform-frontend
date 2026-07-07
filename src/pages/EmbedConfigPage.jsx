@@ -6,6 +6,9 @@ export default function EmbedConfigPage() {
     const [allowedDomains, setAllowedDomains] = useState("");
     const [allowedMetrics, setAllowedMetrics] = useState("");
     const [theme, setTheme] = useState("dark");
+    const [customColor, setCustomColor] = useState("");
+    const [logoUrl, setLogoUrl] = useState("");
+    const [fontFamily, setFontFamily] = useState("");
     const [generatedEmbed, setGeneratedEmbed] = useState(null);
     const [loading, setLoading] = useState(false);
     const [msg, setMsg] = useState("");
@@ -28,12 +31,15 @@ export default function EmbedConfigPage() {
         setLoading(true);
         setMsg("");
         try {
-            const res = await embedApi.generate(allowedDomains, allowedMetrics, theme);
+            const res = await embedApi.generate(allowedDomains, allowedMetrics, theme, customColor, logoUrl, fontFamily);
             const token = res.data.embedToken;
             const snippet = `<script src="${window.location.origin.replace("5173", "8080")}/embed/widget.js"></script>\n<analytics-widget token="${token}" data-theme="${theme}"></analytics-widget>`;
             setGeneratedEmbed(snippet);
             setAllowedDomains("");
             setAllowedMetrics("");
+            setCustomColor("");
+            setLogoUrl("");
+            setFontFamily("");
             fetchConfigs();
             setMsg("✅ Embed configuration generated successfully!");
         } catch (err) {
@@ -92,6 +98,24 @@ export default function EmbedConfigPage() {
                                     <option value="dark">Dark Theme</option>
                                     <option value="light">Light Theme</option>
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-slate-400 text-sm mb-1.5">Custom Accent Color (Optional)</label>
+                                <input value={customColor} onChange={e => setCustomColor(e.target.value)}
+                                    placeholder="e.g. #ff0000 or rgb(0,255,0)"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500" />
+                            </div>
+                            <div>
+                                <label className="block text-slate-400 text-sm mb-1.5">Custom Logo URL (Optional)</label>
+                                <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)}
+                                    placeholder="https://yoursite.com/logo.png"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500" />
+                            </div>
+                            <div>
+                                <label className="block text-slate-400 text-sm mb-1.5">Custom Font Family (Optional)</label>
+                                <input value={fontFamily} onChange={e => setFontFamily(e.target.value)}
+                                    placeholder="e.g. 'Roboto', sans-serif"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500" />
                             </div>
                             <button type="submit" disabled={loading}
                                 className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50 mt-2">
